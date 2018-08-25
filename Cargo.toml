@@ -1,0 +1,6 @@
+[package]
+name = "cminus"
+version = "0.1.0"
+authors = ["Andrew Tang <andrew.tang@outlook.com>"]
+
+[dependencies]
