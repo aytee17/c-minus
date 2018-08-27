@@ -22,7 +22,7 @@ enum State {
 
 pub struct Scanner {
     source: BufReader<File>,
-    buffer: Vec<u8>,
+    buffer: [u8; 1],
     reserve: bool,
     id: String,
 }
@@ -48,7 +48,7 @@ impl Scanner {
     pub fn new(path: &String) -> Result<Scanner> {
         let file = File::open(path)?;
         let source = BufReader::new(file);
-        let buffer: Vec<u8> = vec![0];
+        let buffer = [0u8; 1];
         let reserve = false;
 
         Ok(Scanner {
