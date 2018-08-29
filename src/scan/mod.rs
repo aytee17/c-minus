@@ -1,10 +1,12 @@
+mod tokens;
+use self::tokens::Token;
+use self::tokens::Token::*;
+use self::State::*;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::io::Result;
 use std::process;
-mod tokens;
-use self::tokens::Token;
 
 enum State {
     Start,
@@ -20,6 +22,7 @@ enum State {
     Done(Token),
 }
 
+#[derive(Debug)]
 pub struct Scanner {
     source: BufReader<File>,
     buffer: [u8; 1],
@@ -29,14 +32,14 @@ pub struct Scanner {
 
 impl Iterator for Scanner {
     type Item = Token;
-    fn next(&mut self) -> Option<Token> {
-        let mut state = State::Start;
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut state = Start;
         loop {
             if self.load_char() == false {
                 break;
             }
             state = self.transition(state);
-            if let State::Done(token) = state {
+            if let Done(token) = state {
                 return Some(token);
             }
         }
@@ -45,7 +48,7 @@ impl Iterator for Scanner {
 }
 
 impl Scanner {
-    pub fn new(path: &String) -> Result<Scanner> {
+    pub fn new(path: &String) -> Result<Self> {
         let file = File::open(path)?;
         let source = BufReader::new(file);
         let buffer = [0u8; 1];
@@ -60,107 +63,107 @@ impl Scanner {
     }
 
     fn transition(&mut self, state: State) -> State {
-        let c = self.get_char();
+        let next_char = self.get_char();
         return match state {
-            State::Start => match c {
-                '+' => State::Done(Token::PLUS),
-                '-' => State::Done(Token::MINUS),
-                '*' => State::Done(Token::MULTIPLY),
-                '/' => State::InSlash,
-                '!' => State::InNot,
-                '=' => State::InEqual,
-                '<' => State::InLess,
-                '>' => State::InGreat,
-                ';' => State::Done(Token::SEMICOLON),
-                ',' => State::Done(Token::COMMA),
-                '(' => State::Done(Token::L_PAREN),
-                ')' => State::Done(Token::R_PAREN),
-                '[' => State::Done(Token::L_BRACK),
-                ']' => State::Done(Token::R_BRACK),
-                '{' => State::Done(Token::L_BRACE),
-                '}' => State::Done(Token::R_BRACE),
+            Start => match next_char {
+                '+' => Done(PLUS),
+                '-' => Done(MINUS),
+                '*' => Done(MULTIPLY),
+                '/' => InSlash,
+                '!' => InNot,
+                '=' => InEqual,
+                '<' => InLess,
+                '>' => InGreat,
+                ';' => Done(SEMICOLON),
+                ',' => Done(COMMA),
+                '(' => Done(L_PAREN),
+                ')' => Done(R_PAREN),
+                '[' => Done(L_BRACK),
+                ']' => Done(R_BRACK),
+                '{' => Done(L_BRACE),
+                '}' => Done(R_BRACE),
                 '0'...'9' => {
-                    self.build_identifier(c);
-                    State::InNum
+                    self.build_identifier(next_char);
+                    InNum
                 }
                 'A'...'Z' | 'a'...'z' => {
-                    self.build_identifier(c);
-                    State::InID
+                    self.build_identifier(next_char);
+                    InID
                 }
-                _ => State::Start,
+                _ => Start,
             },
-            State::InSlash => match c {
-                '*' => State::InComment,
-                _ => State::Done(Token::DIVIDE),
+            InSlash => match next_char {
+                '*' => InComment,
+                _ => Done(DIVIDE),
             },
-            State::InComment => match c {
-                '*' => State::InStar,
-                _ => State::InComment,
+            InComment => match next_char {
+                '*' => InStar,
+                _ => InComment,
             },
-            State::InStar => match c {
-                '/' => State::Start,
-                _ => State::InComment,
+            InStar => match next_char {
+                '/' => Start,
+                _ => InComment,
             },
-            State::InNot => match c {
-                '=' => State::Done(Token::NOT_EQ),
-                _ => State::Done(Token::ERROR("Unexpected token: !")),
+            InNot => match next_char {
+                '=' => Done(NOT_EQ),
+                _ => Done(ERROR("Unexpected token: !")),
             },
-            State::InEqual => match c {
-                '=' => State::Done(Token::EQUAL),
+            InEqual => match next_char {
+                '=' => Done(EQUAL),
                 _ => {
                     self.reserve_char();
-                    State::Done(Token::ASSIGN)
+                    Done(ASSIGN)
                 }
             },
-            State::InLess => match c {
-                '=' => State::Done(Token::GT_EQ),
+            InLess => match next_char {
+                '=' => Done(GT_EQ),
                 _ => {
                     self.reserve_char();
-                    State::Done(Token::LESS_THAN)
+                    Done(LESS_THAN)
                 }
             },
-            State::InGreat => match c {
-                '=' => State::Done(Token::LT_EQ),
+            InGreat => match next_char {
+                '=' => Done(LT_EQ),
                 _ => {
                     self.reserve_char();
-                    State::Done(Token::GREATER_THAN)
+                    Done(GREATER_THAN)
                 }
             },
-            State::InID => match c {
+            InID => match next_char {
                 '0'...'9' | 'A'...'Z' | 'a'...'z' => {
-                    self.build_identifier(c);
-                    State::InID
+                    self.build_identifier(next_char);
+                    InID
                 }
                 _ => {
                     self.reserve_char();
                     let id = self.get_identifier();
                     let state = match id.as_str() {
-                        "if" => State::Done(Token::IF),
-                        "else" => State::Done(Token::ELSE),
-                        "while" => State::Done(Token::WHILE),
-                        "void" => State::Done(Token::VOID),
-                        "int" => State::Done(Token::INT),
-                        "return" => State::Done(Token::RETURN),
-                        _ => State::Done(Token::IDENTIFIER(id)),
+                        "if" => Done(IF),
+                        "else" => Done(ELSE),
+                        "while" => Done(WHILE),
+                        "void" => Done(VOID),
+                        "int" => Done(INT),
+                        "return" => Done(RETURN),
+                        _ => Done(IDENTIFIER(id)),
                     };
                     self.clear_identifier();
                     state
                 }
             },
-            State::InNum => match c {
+            InNum => match next_char {
                 '0'...'9' => {
-                    self.build_identifier(c);
-                    State::InNum
+                    self.build_identifier(next_char);
+                    InNum
                 }
                 _ => {
                     self.reserve_char();
                     let id = self.get_identifier().parse::<u32>().unwrap();
-                    let state = State::Done(Token::NUMBER(id));
+                    let state = Done(NUMBER(id));
                     self.clear_identifier();
                     state
                 }
             },
-            State::Done(x) => State::Done(x),
+            Done(x) => Done(x),
         };
     }
 
