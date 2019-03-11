@@ -1,5 +1,5 @@
-mod scan;
-use scan::Scanner;
+mod scanner;
+use scanner::Scanner;
 use std::env;
 use std::process;
 

@@ -1,26 +1,12 @@
+mod state;
 mod tokens;
-use self::tokens::Token;
-use self::tokens::Token::*;
-use self::State::*;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::Read;
-use std::io::Result;
-use std::process;
-
-enum State {
-    Start,
-    InID,
-    InNum,
-    InSlash,
-    InComment,
-    InStar,
-    InEqual,
-    InLess,
-    InGreat,
-    InNot,
-    Done(Token),
-}
+use self::state::{State, State::*};
+use self::tokens::{Token, Token::*};
+use std::{
+    fs::File,
+    io::{BufReader, Read, Result},
+    process,
+};
 
 #[derive(Debug)]
 pub struct Scanner {
